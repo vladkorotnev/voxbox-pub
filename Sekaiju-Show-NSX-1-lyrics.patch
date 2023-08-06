@@ -1,0 +1,111 @@
+From a5446728d4610365746dba91cd996d646914d33c Mon Sep 17 00:00:00 2001
+From: akasaka <akasaka@nezumi.local>
+Date: Sat, 17 Jun 2023 11:41:35 +0900
+Subject: [PATCH] Show NSX-1 lyrics
+
+---
+ Sekaiju7.8/src/PianoRollKeyTimeView.cpp | 77 +++++++++++++++++++++++++
+ 1 file changed, 77 insertions(+)
+
+diff --git a/Sekaiju7.8/src/PianoRollKeyTimeView.cpp b/Sekaiju7.8/src/PianoRollKeyTimeView.cpp
+index 5362f9d..71f904e 100644
+--- a/Sekaiju7.8/src/PianoRollKeyTimeView.cpp
++++ b/Sekaiju7.8/src/PianoRollKeyTimeView.cpp
+@@ -286,9 +286,28 @@ void CPianoRollKeyTimeView::OnDraw (CDC* pDC) {
+ 	MIDITrack* pMIDITrack = NULL;
+ 	MIDIEvent* pMIDIEvent = NULL;
+ 	i = 0;
++
++	// NSX-1対応用
++	CFont nsxFont;
++	nsxFont.CreatePointFont(96/*nPointSize*/, _T("Courier New"), pDC);
++	const unsigned char NSX_LYRIC_PREFIX[7] = { 0xF0, 0x43, 0x79, 0x09, 0x00, 0x50, 0x10 };
++	const char * NSX_LYRIC_PHONEME_DELIMITER = ",";
++	char* nsxLyricCsv = NULL;
++	char* nsxLyricCsvCurrentPos = NULL;
++	long lLyricCsvLen = 0;
++
++
+ 	forEachTrack (pMIDIData, pMIDITrack) {
+ 		if (pPianoRollFrame->IsTrackVisible (i)) {
+ 			long lColor = MIDITrack_GetForeColor (pMIDITrack);
++			
++			if (nsxLyricCsv != NULL) {
++				free(nsxLyricCsv);
++				nsxLyricCsv = NULL;
++				nsxLyricCsvCurrentPos = NULL;
++				lLyricCsvLen = 0;
++			}
++			
+ 			forEachEvent (pMIDITrack, pMIDIEvent) {
+ 				if (MIDIEvent_IsNoteOn (pMIDIEvent)) {
+ 					if (pMIDIEvent->m_lTime < lVisibleRightTime) {
+@@ -302,7 +321,65 @@ void CPianoRollKeyTimeView::OnDraw (CDC* pDC) {
+ 							pDC->FillSolidRect (CRect (x, y, x + w, y - lKeyZoom), lColor);
+ 						}
+ 						pDC->Draw3dRect (x, y - lKeyZoom, w, lKeyZoom ,RGB (255,255,255), RGB (0, 0, 0));
++
++						// NSX-1/NSX-39用歌詞データ描画
++						if (nsxLyricCsv != NULL) {
++							// ポインター先の文字列をデリミタで切る
++							long phonemeLen = strcspn(nsxLyricCsvCurrentPos, NSX_LYRIC_PHONEME_DELIMITER);
++							bool restoreFlg = false;
++							if (nsxLyricCsvCurrentPos[phonemeLen] != 0x0) {
++								nsxLyricCsvCurrentPos[phonemeLen] = 0x0;
++								restoreFlg = true;
++							}
++							
++							// 文字列を描画する
++							pDC->SelectObject(HFONT(nsxFont));
++							pDC->SetTextColor(RGB(0, 0, 0));
++							pDC->SetBkMode(TRANSPARENT);
++							pDC->DrawText(CString(nsxLyricCsvCurrentPos), CRect(x, y, x + w, y - lKeyZoom), DT_LEFT | DT_NOPREFIX | DT_NOCLIP);
++
++							// データを復旧しポインターを進む
++							if (restoreFlg == true) {
++								nsxLyricCsvCurrentPos[phonemeLen] = NSX_LYRIC_PHONEME_DELIMITER[0];
++							}
++							nsxLyricCsvCurrentPos = strstr(nsxLyricCsvCurrentPos, NSX_LYRIC_PHONEME_DELIMITER);
++							if (nsxLyricCsvCurrentPos == NULL) {
++								nsxLyricCsvCurrentPos = nsxLyricCsv;
++							}
++							else {
++								nsxLyricCsvCurrentPos++;
++							}
++						}
++					}
++				} // IsNoteOn
++				else if (MIDIEvent_IsSysExEvent(pMIDIEvent)) {
++					// Sysex内容を取得する
++					long lLen = MIDIEvent_GetLen(pMIDIEvent);
++					if (lLen < sizeof(NSX_LYRIC_PREFIX)) {
++						continue;
++					}
++
++					BYTE byMsg[1024];
++					memset(byMsg, 0, sizeof(byMsg));
++					MIDIEvent_GetData(pMIDIEvent, byMsg, __min(lLen, sizeof(byMsg)));
++
++					// NSX1歌詞データかのチェック
++					if (memcmp(&byMsg, &NSX_LYRIC_PREFIX, sizeof(NSX_LYRIC_PREFIX)) != 0) {
++						continue; // NSX1ではない
++					}
++
++					if (nsxLyricCsv != NULL) {
++						free(nsxLyricCsv);
++						nsxLyricCsv = NULL;
+ 					}
++
++					lLyricCsvLen = lLen - sizeof(NSX_LYRIC_PREFIX);
++					nsxLyricCsv = (char*) malloc(lLyricCsvLen);
++					if (nsxLyricCsv == NULL) abort();
++
++					memcpy((void*)nsxLyricCsv, &byMsg[sizeof(NSX_LYRIC_PREFIX)], lLyricCsvLen);
++					nsxLyricCsv[lLyricCsvLen - 1] = 0x0;
++					nsxLyricCsvCurrentPos = nsxLyricCsv;
+ 				}
+ 			}
+ 		}
+-- 
+2.35.1.windows.2
+
