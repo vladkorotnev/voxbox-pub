@@ -1,0 +1,33 @@
+AYYMIDI (02=seconds):
+F0 7A 5C 02 [ASCII] 00 [ASCII] 00 F7
+blank infinity: F0 7A 5C 1F 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 00 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 00 F7
+
+VOXBOX:
+F0 7B 02 02 [ASCII] 00 ([ASCII] 00) F7
+blank infinity: F0 7B 02 1F 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 00 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 00 F7
+
+[VOXBOX SCR]
+T  |MagicalMirai2020||Greetingz go to:|
+E  |  S H A B O N   ||MM2020 Live Ver |
+
+[AYYMID SCR]
+1  |   Sora_CLily   || meet you there!|
+2  |    danox574    ||thx 4 ze ticket!|
+3  |    Hummtaro    || NSX-1 rulez :D |
+
+4  |                ||                |
+5  |                ||     and also...|
+
+6  |      NightRadio||namikiri        |
+7  |Engineegor      ||Megabozyakorovka|
+8  | lemuel_producer||tails_          |
+9  |Saya Scarlet    ||   metamorphling|
+
+10 |   friends &    ||    supporters  |
+11 |  in demoscene  ||    and music   |
+
+E0 |Music & Lyrics: || Hachiya Nanashi|
+E2 |                ||                |
+
+[MU50 SCR]
+E1 | MIDI Programming lemuel_producer |
